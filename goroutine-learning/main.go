@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	mutexTest()
+	execSelectTest()
 }
 
 func execPrimeNumber() {

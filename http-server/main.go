@@ -1,17 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+
+	"servertest/src/handler"
+	"servertest/src/middleware"
 )
 
-type muxMiddleware func(w http.ResponseWriter, r *http.Request)
-
-func (f muxMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Print("test")
-	f(w, r)
-}
+//
 func test(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("前置中间件Got a %s request for: %v", r.Method, r.URL)
@@ -22,9 +19,8 @@ func test(handler http.Handler) http.Handler {
 
 func main() {
 	mux := http.NewServeMux()
-	mux.Handle("/", muxMiddleware(func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte("Hello1"))
-	}))
+	mux.Handle("/test", middleware.TestMuxMiddleware(handler.TestHandler))
+	mux.HandleFunc("/srs", middleware.TestMuxMiddleware(handler.SrsHandler))
 	new_mux := test(mux)
 
 	server := &http.Server{

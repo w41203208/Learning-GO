@@ -1,11 +1,28 @@
 package main
 
-import ()
+import (
+	"fmt"
+	"sync"
+	"time"
+)
 
 func main() {
-	arr1 := []int{0, 1, 2, 3, 4, 5, 6, 8, 9, 11, 10, 50}
-	arr2 := []int{1, 2, 3, 4, 5}
+	wait := &sync.WaitGroup{}
+	ch := make(chan string)
+	go func() {
+		ch <- "Hello"
+		time.Sleep(2 * time.Second)
+		ch <- "World"
+		close(ch)
+	}()
+	go func() {
+		wait.Add(1)
+		for message := range ch {
+			fmt.Println(message)
+		}
+		defer wait.Done()
+	}()
 
-	temp_map := map[string]int()
-
+	fmt.Println("test")
+	wait.Wait()
 }
