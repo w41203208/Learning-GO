@@ -1,10 +1,3 @@
-// package main
-
-// import (
-// 	"fmt"
-// 	"sync"
-// )
-
 // func main() {
 // 	fmt.Println("start")
 // 	testMap := make(map[string]bool)
@@ -48,43 +41,56 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"log"
+	"math/rand"
 	"sync"
-	"sync/atomic"
+	"time"
 )
 
-var counter int64
-var mutex sync.Mutex
-
-func increment() {
-	atomic.AddInt64(&counter, 1)
-}
-
-func safeIncrement() {
-	mutex.Lock()
-	counter++
-	mutex.Unlock()
+func timetest() {
+	now := time.Now()
+	now2 := now.Add(-1 * time.Hour)
+	log.Println(now.Before(now2))
 }
 
 func main() {
-	var wg sync.WaitGroup
-	wg.Add(2)
 
+	t := time.Now().Unix()
+	r1 := rand.New(rand.NewSource(t))
+
+	ctx := context.Background()
+	getCh := make(chan int)
+
+	wait := &sync.WaitGroup{}
+	wait.Add(1)
 	go func() {
-		defer wg.Done()
-		for i := 0; i < 1000; i++ {
-			increment()
+		defer wait.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case v := <-getCh:
+				log.Println(v)
+			}
 		}
 	}()
+	ctx, cancelCtx := context.WithCancel(ctx)
 
-	go func() {
-		defer wg.Done()
-		for i := 0; i < 1000; i++ {
-			safeIncrement()
+	for {
+		v := r1.Intn(10)
+		if v > 7 {
+			cancelCtx()
+			break
+		} else {
+			getCh <- v
 		}
-	}()
+		time.Sleep(2 * time.Second)
+	}
 
-	wg.Wait()
+	wait.Wait()
 
-	fmt.Println("Counter:", counter)
+	log.Println("End")
+
+	// timetest()
 }

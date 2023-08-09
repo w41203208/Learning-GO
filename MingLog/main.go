@@ -9,12 +9,12 @@ import (
 )
 
 func main() {
+
 	finalClosedChan := make(chan struct{})
 
 	go func() {
 		MingLog.Receive()
 	}()
-
 	// MingLog.Println("test1")
 
 	// MingLog.Println("test1")

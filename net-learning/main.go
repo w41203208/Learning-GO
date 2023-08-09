@@ -9,8 +9,7 @@ import (
 	"unsafe"
 )
 
-
-func main(){
+func main() {
 	if len(os.Args) != 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s host:port", os.Args[0])
 		os.Exit(1)
@@ -37,14 +36,14 @@ func byte2string(b []byte) string {
 	return s
 }
 
-func validateError(err error){
+func validateError(err error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
 		os.Exit(1)
 	}
 }
 
-func fullyRead(conn net.Conn) ([]byte, error){
+func fullyRead(conn net.Conn) ([]byte, error) {
 	defer conn.Close()
 
 	result := bytes.NewBuffer(nil)
