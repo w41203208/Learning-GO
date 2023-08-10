@@ -54,12 +54,17 @@ func timetest() {
 	log.Println(now.Before(now2))
 }
 
+func testByte(i byte) {
+	log.Println(i)
+}
+
 func main() {
+	testByte(':')
 
 	t := time.Now().Unix()
 	r1 := rand.New(rand.NewSource(t))
 
-	ctx := context.Background()
+	parentCtx := context.Background()
 	getCh := make(chan int)
 
 	wait := &sync.WaitGroup{}
@@ -68,14 +73,15 @@ func main() {
 		defer wait.Done()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-parentCtx.Done():
+				log.Println("closed")
 				return
 			case v := <-getCh:
 				log.Println(v)
 			}
 		}
 	}()
-	ctx, cancelCtx := context.WithCancel(ctx)
+	_, cancelCtx := context.WithCancel(parentCtx)
 
 	for {
 		v := r1.Intn(10)
