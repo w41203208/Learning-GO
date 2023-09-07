@@ -6,15 +6,33 @@ import (
 	"sync"
 	"time"
 )
-
+type SafeNumber struct {
+	v   int
+	mux sync.Mutex // 互斥鎖
+}
 func main() {
+	mutex := &sync.Mutex{}
+	total := SafeNumber{v:0}
+	mutex.Lock()
+
+    for i := 0; i < 1000; i++ {
+        go func(){
+    		total.mux.Lock()
+    		total.v++
+    		total.mux.Unlock()
+    	}()
+    }
+    time.Sleep(time.Second)
+		mutex.Unlock()
+    fmt.Println(total.v)
+
 }
 
 func execPrimeNumber(){
 	const max = 100
 	numbers := IntegerGenerator()
 	number := <-numbers
-	
+
 	for number <= max{
 		fmt.Println(number)
 		numbers = filter(numbers, number)
@@ -23,7 +41,7 @@ func execPrimeNumber(){
 }
 func IntegerGenerator() chan int{
 	ch := make(chan int)
-	
+
 	go func(){
 		for i := 2; ; i++{
 			ch <-i
@@ -39,8 +57,8 @@ func filter(in chan int, number int) chan int{
 	go func(){
 		for {
 			i := <-in
-			
-			
+
+
 			if i%number != 0{
 				out <-i
 			}
@@ -55,7 +73,7 @@ func execSelectTest(){
 	ch1, ch2, ch3 := send(1), send(2), send(3)
 	ch := make(chan int)
 	timeout := time.After((1 * time.Second))
-	
+
 	go func(){
 		for isTimeout := false; !isTimeout; {
 			select {
@@ -159,7 +177,7 @@ func signalTest(){
 		fmt.Println("開始goroutine")
 		ch <- "signal"
 		fmt.Println("退出goroutine")
-	}() 
+	}()
 	fmt.Println("等待goroutine")
 	<-ch
 	fmt.Println("完成")
