@@ -10,7 +10,7 @@ func main() {
 	Server()
 }
 func Server() {
-	l, err := net.Listen("tcp", "0.0.0.0:8084")
+	l, err := net.Listen("tcp", "[fe80::8008:b4b1:203a:60d6]:7890")
 	if err != nil {
 		log.Fatal(err)
 	}

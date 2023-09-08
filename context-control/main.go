@@ -35,9 +35,9 @@
 // 	// 	SigCh <- 3
 // 	// }()
 
-// 	wait.Wait()
-// 	fmt.Println("end")
-// }
+//		wait.Wait()
+//		fmt.Println("end")
+//	}
 package main
 
 import (
@@ -59,12 +59,13 @@ func testByte(i byte) {
 }
 
 func main() {
-	testByte(':')
+	// testByte(':')
 
 	t := time.Now().Unix()
 	r1 := rand.New(rand.NewSource(t))
 
 	parentCtx := context.Background()
+	ctx, cancelCtx := context.WithCancel(parentCtx)
 	getCh := make(chan int)
 
 	wait := &sync.WaitGroup{}
@@ -73,7 +74,7 @@ func main() {
 		defer wait.Done()
 		for {
 			select {
-			case <-parentCtx.Done():
+			case <-ctx.Done():
 				log.Println("closed")
 				return
 			case v := <-getCh:
@@ -81,7 +82,6 @@ func main() {
 			}
 		}
 	}()
-	_, cancelCtx := context.WithCancel(parentCtx)
 
 	for {
 		v := r1.Intn(10)
