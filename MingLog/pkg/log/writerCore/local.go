@@ -1,9 +1,23 @@
 package writerCore
 
-import "io"
+import (
+	"io"
+	"xlog/pkg/log/level"
+)
 
 type LocalWriter struct {
-	w io.Writer
+	level level.XLevel
+	w     io.Writer
+}
+
+func NewLocalWriter(out io.Writer) *LocalWriter {
+	return &LocalWriter{
+		w: out,
+	}
+}
+
+func (lw *LocalWriter) Check(lvl level.XLevel) bool {
+	return lw.level.Enable(lvl)
 }
 
 func (lw *LocalWriter) Write(p []byte) {

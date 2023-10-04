@@ -1,12 +1,9 @@
 package main
 
-import "log"
-
-// import xlog "xlog/pkg/log"
+import xlog "xlog/pkg/log"
 
 func main() {
-	// xlog := xlog.NewXLog(xlog.SetCodeDetail(true))
-	var a uint8 = 2
+	xlog := xlog.NewXLog()
 
-	log.Println(^a)
+	xlog.LogTrace("test")
 }

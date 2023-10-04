@@ -1,5 +1,7 @@
 package xlog
 
+import "xlog/pkg/log/level"
+
 type XOption interface {
 	apply(x *XLog)
 }
@@ -10,7 +12,7 @@ func (xf XOptionFunc) apply(x *XLog) {
 	xf(x)
 }
 
-func SetLevel(level XLevel) XOption {
+func SetLevel(level level.XLevel) XOption {
 	return XOptionFunc(func(x *XLog) {
 		x.level = level
 	})
@@ -25,14 +27,22 @@ func SetCodeDetail(t bool) XOption {
 	})
 }
 
-func SetLogDate(date XLogFormat) XOption {
+func SetLogDate(t bool) XOption {
 	return XOptionFunc(func(x *XLog) {
-		x.formatFlag |= date
+		if t {
+			x.formatFlag |= XLogDetail
+		} else {
+			x.formatFlag &= ^XLogDate
+		}
 	})
 }
 
-func SetLogTime(time XLogFormat) XOption {
+func SetLogTime(t bool) XOption {
 	return XOptionFunc(func(x *XLog) {
-		x.formatFlag |= time
+		if t {
+			x.formatFlag |= XLogTime
+		} else {
+			x.formatFlag &= ^XLogTime
+		}
 	})
 }

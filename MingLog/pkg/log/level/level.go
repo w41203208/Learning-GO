@@ -1,6 +1,6 @@
-package xlog
+package level
 
-type XLevel int8
+type XLevel uint8
 
 const (
 	InfoLevel XLevel = iota
@@ -9,8 +9,8 @@ const (
 	ErrorLevel
 )
 
-func (xlevel XLevel) String() string {
-	switch xlevel {
+func (xlvl XLevel) String() string {
+	switch xlvl {
 	case InfoLevel:
 		return "info"
 	case TraceLevel:
@@ -22,4 +22,8 @@ func (xlevel XLevel) String() string {
 	default:
 		return ""
 	}
+}
+
+func (xlvl *XLevel) Enable(lvl XLevel) bool {
+	return lvl > *xlvl
 }
