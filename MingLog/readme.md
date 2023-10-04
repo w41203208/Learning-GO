@@ -11,3 +11,7 @@
   ```
   [level] date time codedetail messagebody
   ```
+
+- use pool to decrease GC loading
+
+- maybe use command pattern to refactor new message process
