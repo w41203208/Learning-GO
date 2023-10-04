@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"runtime"
 	"strings"
@@ -44,7 +45,7 @@ type MingLog struct {
 func New(out io.Writer, prefix string, fFlag int, oFlag int) *MingLog {
 	var log = &MingLog{out: out, prefix: prefix, formatFlag: fFlag, outputFlag: oFlag}
 	log.closeChan = make(chan struct{})
-	log.dataChan = make(chan []byte)
+	log.dataChan = make(chan []byte, 10)
 	return log
 }
 
@@ -57,8 +58,8 @@ func (ml *MingLog) Receive() {
 		for {
 			select {
 			case data := <-ml.dataChan:
-				ml.mu.Unlock()
 				ml.execute(data)
+				ml.mu.Unlock()
 			case <-ml.closeChan:
 				return
 			}
@@ -151,6 +152,7 @@ func (ml *MingLog) formatHeader(buf *[]byte, t time.Time, file string, line int)
 	*buf = append(*buf, ' ')
 
 	if ml.formatFlag&Lshortfile != 0 {
+		log.Println("testtesttest")
 		var arr = strings.Split(file, "/")
 		var last = arr[len(arr)-1]
 
@@ -183,7 +185,7 @@ func (ml *MingLog) output(callerDepth int, s string) error {
 
 	ml.buf = append(ml.buf, s...)
 
-	// fmt.Println("Before: ", string(ml.buf))
+	fmt.Println("Before: ", string(ml.buf))
 	// ml.consoleLocal(ml.buf)
 	ml.dataChan <- ml.buf
 
