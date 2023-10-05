@@ -2,28 +2,24 @@ package xlog
 
 import (
 	"os"
+	"runtime"
+	"sync"
 	writerCore "xlog/pkg/log/WriterCore"
+	"xlog/pkg/log/encoder"
 	"xlog/pkg/log/level"
+	"xlog/pkg/log/message"
+	"xlog/pkg/log/pool"
 )
 
-type XEncoder struct {
-}
-
-func (enc *XEncoder) Encode(msg *XMessage) []byte {
-	buf := []byte(msg.Level.String())
-
-	buf = append(buf, msg.Body...)
-
-	return buf
-}
-
 type XLog struct {
+	mu          sync.Mutex
 	level       level.XLevel
 	formatFlag  XLogFormat
 	WriterCores []writerCore.WriterCore
-	enc         *XEncoder
+	enc         encoder.IEncoder
 
-	messageWriterPool *MessageWriterPool
+	msgWriterPool *pool.Pool[*MessageWriter]
+	newEncFn      func() encoder.IEncoder
 }
 
 type XLogFormat uint8
@@ -34,32 +30,34 @@ const (
 	XLogTime
 )
 
-func NewXLog(opts ...XOption) *XLog {
-	xEnc := &XEncoder{}
+func NewXLog(newEncFn func() encoder.IEncoder, opts ...XOption) *XLog {
 
-	x := &XLog{
-		enc:        xEnc,
+	xl := &XLog{
 		level:      level.TraceLevel,
 		formatFlag: XLogDate | XLogTime,
-
-		//test
-		messageWriterPool: NewMessageWriterPool(func() *MessageWriter {
-			return &MessageWriter{
-				enc: xEnc,
-			}
-		}),
 	}
-	// log.Println(x.level);
+
+	if fn := newEncFn; fn != nil {
+		xl.enc = fn()
+	} else {
+		xl.enc = &encoder.XEncoder{}
+	}
+
+	xl.msgWriterPool = pool.NewPool[*MessageWriter](func() *MessageWriter {
+		return &MessageWriter{
+			enc: xl.enc,
+		}
+	})
 
 	if len(opts) > 0 {
 		for _, opt := range opts {
-			opt.apply(x)
+			opt.apply(xl)
 		}
 	}
 
-	x.AddWriterCore(writerCore.NewLocalWriter(os.Stderr))
+	xl.AddWriterCore(writerCore.NewLocalWriter(os.Stderr))
 
-	return x
+	return xl
 }
 
 func (xl *XLog) AddWriterCore(wc writerCore.WriterCore) {
@@ -68,27 +66,45 @@ func (xl *XLog) AddWriterCore(wc writerCore.WriterCore) {
 }
 
 func (xl *XLog) LogTrace(msg string, Fields ...interface{}) {
-	if ent := xl.logCheck(level.TraceLevel, msg); ent != nil {
-		ent.Write()
+	if ent, m := xl.logCheck(level.TraceLevel, msg); ent != nil {
+		ent.Write(m)
 	}
 }
 
-func (xl *XLog) logCheck(level level.XLevel, msg string) *MessageWriter {
+func (xl *XLog) logCheck(level level.XLevel, msg string) (*MessageWriter, *message.XMessage) {
 	if xl.level > level {
-		return nil
+		return nil, nil
 	}
 
-	m := NewMessage(xl.level, msg)
+	// step 1 new message
+
+	//temp use this to take stacktrace
+	var MsgCaller *message.MessageCaller
+	if xl.formatFlag&XLogDetail != 0 {
+		var pcs []uintptr = []uintptr{10}
+		numFrames := runtime.Callers(3, pcs)
+		pc := pcs[:numFrames]
+		frames := runtime.CallersFrames(pc)
+		frame, _ := frames.Next()
+
+		MsgCaller = &message.MessageCaller{
+			File: frame.File,
+			Line: frame.Line,
+		}
+	}
 
 	// add other attribute for message
-
-	// maybe need to use sync.Pool to store entry
-	mWriter := &MessageWriter{
-		enc:     xl.enc,
-		message: m,
+	m := &message.XMessage{
+		Level:   xl.level,
+		Body:    msg,
+		MCaller: MsgCaller,
 	}
 
-	//
+	// step 2 get MessageWriter
+	// maybe need to use sync.Pool to store entry
+	mWriter := xl.msgWriterPool.Get()
+
+	// step 3 add core in MessageWriter
 	if len(xl.WriterCores) > 0 {
 		for _, core := range xl.WriterCores {
 			if core.Check(m.Level) {
@@ -97,5 +113,5 @@ func (xl *XLog) logCheck(level level.XLevel, msg string) *MessageWriter {
 		}
 	}
 
-	return mWriter
+	return mWriter, m
 }

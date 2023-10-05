@@ -1,6 +1,8 @@
 package xlog
 
-import "xlog/pkg/log/level"
+import (
+	"xlog/pkg/log/level"
+)
 
 type XOption interface {
 	apply(x *XLog)

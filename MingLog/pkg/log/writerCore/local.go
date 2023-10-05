@@ -25,5 +25,5 @@ func (lw *LocalWriter) Write(p []byte) {
 }
 
 func (lw *LocalWriter) write(p []byte) {
-
+	lw.w.Write(p)
 }
