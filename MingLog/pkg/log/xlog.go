@@ -12,12 +12,14 @@ import (
 )
 
 type XLog struct {
-	mu          sync.Mutex
+	rwMu        sync.RWMutex
+	closeChan   chan (struct{})
 	level       level.XLevel
 	formatFlag  XLogFormat
 	WriterCores []writerCore.WriterCore
 	enc         encoder.IEncoder
 
+	messageList   []message.XMessage
 	msgWriterPool *pool.Pool[*MessageWriter]
 	newEncFn      func() encoder.IEncoder
 }
@@ -57,7 +59,18 @@ func NewXLog(newEncFn func() encoder.IEncoder, opts ...XOption) *XLog {
 
 	xl.AddWriterCore(writerCore.NewLocalWriter(os.Stderr))
 
+	// go xl.StartToWrite()
 	return xl
+}
+
+func (xl *XLog) StartToWrite() {
+	for {
+		for len(xl.messageList) != 0 {
+			xl.rwMu.RLock()
+
+			xl.rwMu.RUnlock()
+		}
+	}
 }
 
 func (xl *XLog) AddWriterCore(wc writerCore.WriterCore) {
