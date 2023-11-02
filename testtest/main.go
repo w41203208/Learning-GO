@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package main
 
 import (
@@ -96,3 +97,33 @@ func FakeStudentToStudent(p People){
 
 // 	return toType(eface.typ)
 // }
+=======
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+func main() {
+	wait := &sync.WaitGroup{}
+	ch := make(chan string)
+	go func() {
+		ch <- "Hello"
+		time.Sleep(2 * time.Second)
+		ch <- "World"
+		close(ch)
+	}()
+	go func() {
+		wait.Add(1)
+		for message := range ch {
+			fmt.Println(message)
+		}
+		defer wait.Done()
+	}()
+
+	fmt.Println("test")
+	wait.Wait()
+}
+>>>>>>> 25c36c416a30a09dc89874e39b3c43edfb47aecd
