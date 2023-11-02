@@ -26,7 +26,7 @@ func main() {
 
 	}
 
-	_, _, a := syscall.Syscall6(uintptr(GetDiskFreeSpaceEx), 4,
+	_, _, a := syscall.SyscallN(uintptr(GetDiskFreeSpaceEx), 4,
 		uintptr(unsafe.Pointer(test)),
 		uintptr(unsafe.Pointer(&lpFreeBytesAvailable)),
 		uintptr(unsafe.Pointer(&lpTotalNumberOfBytes)),
