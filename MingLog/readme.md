@@ -1,10 +1,17 @@
 ### Struct
 
-- XMessage：use to pack string and other field to be a message and put in writerCore
-- WriterCore：define by self, writer message to destination
-- XEncoder
-- XMessageWriter
-- XMessageWriterPool
+- Core
+
+  - MessageWriter
+  - MessageWriterPool
+  - WriterCore：define by self, writer message to destination
+
+- Custom
+
+  - IWriterCore
+  - IEncoder
+  - IMessage：use to pack string and other field to be a message and put in writerCore
+  - IMessageFactory：
 
 ### Design
 

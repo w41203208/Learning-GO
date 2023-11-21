@@ -210,11 +210,9 @@ func (ml *MingLog) consoleFile(b []byte) error {
 		return err
 	}
 	defer file.Close()
-
 	w := bufio.NewWriter(file)
 	w.Write(b)
 	w.Flush()
-	// ml.out.Write(b)
 
 	return nil
 }

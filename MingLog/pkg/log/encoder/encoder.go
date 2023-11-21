@@ -27,7 +27,7 @@ func (enc *XEncoder) Encode(iMsg message.IMessage) *bytes.Buffer {
 		// write code detail
 		if msg.MCaller != nil {
 			buf.WriteString(msg.MCaller.File)
-			buf.WriteString(" ")
+			buf.WriteString(":")
 			buf.WriteString(strconv.Itoa(msg.MCaller.Line))
 			buf.WriteString(" ")
 		}

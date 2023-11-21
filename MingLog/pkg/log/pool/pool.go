@@ -21,6 +21,6 @@ func (p *Pool[T]) Get() T {
 	return p.pool.Get().(T)
 }
 
-func (pl *Pool[T]) Put(x *T) {
+func (pl *Pool[T]) Put(x T) {
 	pl.pool.Put(x)
 }

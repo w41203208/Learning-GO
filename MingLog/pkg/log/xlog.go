@@ -11,15 +11,38 @@ import (
 	"xlog/pkg/log/pool"
 )
 
+type Queue[T any] struct {
+	rwMu sync.RWMutex
+	list []T
+}
+
+func (q *Queue[T]) Push(x T) {
+	q.rwMu.Lock()
+	q.list = append(q.list, x)
+	q.rwMu.Unlock()
+}
+
+func (q *Queue[T]) Pop() T {
+	len := len(q.list)
+	var el T
+	q.rwMu.RLock()
+	el, q.list = q.list[0], q.list[1:len]
+	q.rwMu.RUnlock()
+	return el
+}
+
+func (q *Queue[T]) Length() int {
+	return len(q.list)
+}
+
 type XLog struct {
-	rwMu        sync.RWMutex
 	closeChan   chan (struct{})
 	level       level.XLevel
 	formatFlag  XLogFormat
 	WriterCores []writerCore.WriterCore
 	enc         encoder.IEncoder
 
-	messageList   []message.XMessage
+	messageQueue  *Queue[message.IMessage]
 	msgWriterPool *pool.Pool[*MessageWriter]
 	newEncFn      func() encoder.IEncoder
 }
@@ -31,6 +54,8 @@ const (
 	XLogDate
 	XLogTime
 )
+
+var mwIndex int = 0
 
 func NewXLog(newEncFn func() encoder.IEncoder, opts ...XOption) *XLog {
 
@@ -44,10 +69,14 @@ func NewXLog(newEncFn func() encoder.IEncoder, opts ...XOption) *XLog {
 	} else {
 		xl.enc = &encoder.XEncoder{}
 	}
+	xl.messageQueue = &Queue[message.IMessage]{}
 
 	xl.msgWriterPool = pool.NewPool[*MessageWriter](func() *MessageWriter {
+		mwIndex++
 		return &MessageWriter{
-			enc: xl.enc,
+			added: false,
+			index: mwIndex,
+			enc:   xl.enc,
 		}
 	})
 
@@ -59,16 +88,40 @@ func NewXLog(newEncFn func() encoder.IEncoder, opts ...XOption) *XLog {
 
 	xl.AddWriterCore(writerCore.NewLocalWriter(os.Stderr))
 
-	// go xl.StartToWrite()
 	return xl
+}
+
+func (xl *XLog) Stop() {
+	close(xl.closeChan)
+}
+func (xl *XLog) Start() {
+	go xl.StartToWrite()
+
+	<-xl.closeChan
 }
 
 func (xl *XLog) StartToWrite() {
 	for {
-		for len(xl.messageList) != 0 {
-			xl.rwMu.RLock()
+		for xl.messageQueue.Length() != 0 {
+			msg := xl.messageQueue.Pop()
+			mWriter := xl.msgWriterPool.Get()
 
-			xl.rwMu.RUnlock()
+			// set core in writer
+			if !mWriter.added {
+				if len(xl.WriterCores) > 0 {
+					for _, core := range xl.WriterCores {
+						if core.Check(msg.GetLevel()) {
+							mWriter.AddWriterCore(core)
+						}
+					}
+				}
+				mWriter.added = true
+			}
+
+			mWriter.Write(msg)
+
+			// complete to use, need to put back to pool
+			xl.msgWriterPool.Put(mWriter)
 		}
 	}
 }
@@ -79,18 +132,15 @@ func (xl *XLog) AddWriterCore(wc writerCore.WriterCore) {
 }
 
 func (xl *XLog) LogTrace(msg string, Fields ...interface{}) {
-	if ent, m := xl.logCheck(level.TraceLevel, msg); ent != nil {
-		ent.Write(m)
-	}
+	xl.logCheck(level.TraceLevel, msg)
 }
 
-func (xl *XLog) logCheck(level level.XLevel, msg string) (*MessageWriter, *message.XMessage) {
+func (xl *XLog) logCheck(level level.XLevel, msg string) {
 	if xl.level > level {
-		return nil, nil
+		return
 	}
 
-	// step 1 new message
-
+	// maybe need to be a object to control
 	//temp use this to take stacktrace
 	var MsgCaller *message.MessageCaller
 	if xl.formatFlag&XLogDetail != 0 {
@@ -113,18 +163,5 @@ func (xl *XLog) logCheck(level level.XLevel, msg string) (*MessageWriter, *messa
 		MCaller: MsgCaller,
 	}
 
-	// step 2 get MessageWriter
-	// maybe need to use sync.Pool to store entry
-	mWriter := xl.msgWriterPool.Get()
-
-	// step 3 add core in MessageWriter
-	if len(xl.WriterCores) > 0 {
-		for _, core := range xl.WriterCores {
-			if core.Check(m.Level) {
-				mWriter.AddWriterCore(core)
-			}
-		}
-	}
-
-	return mWriter, m
+	xl.messageQueue.Push(m)
 }

@@ -5,6 +5,7 @@ import (
 )
 
 type IMessage interface {
+	GetLevel() level.XLevel
 	SetFields()
 }
 
@@ -17,6 +18,10 @@ type XMessage struct {
 	Body    string
 	Level   level.XLevel
 	MCaller *MessageCaller
+}
+
+func (m *XMessage) GetLevel() level.XLevel {
+	return m.Level
 }
 
 func (m *XMessage) SetFields() {

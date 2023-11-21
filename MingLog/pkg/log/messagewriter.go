@@ -7,6 +7,8 @@ import (
 )
 
 type MessageWriter struct {
+	index       int
+	added       bool
 	writerCores []writerCore.WriterCore
 	enc         encoder.IEncoder
 }
