@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// ICMP 数据包结构体
+// ICMP 數據包結構
 type ICMP struct {
 	Type     uint8
 	Code     uint8
@@ -19,7 +19,7 @@ type ICMP struct {
 	Seq      uint16
 }
 
-// CheckSum 校验和计算
+// CheckSum 較驗和計算
 func CheckSum(data []byte) uint16 {
 	var (
 		sum    uint32
@@ -47,48 +47,48 @@ func main() {
 	var raddr, _ = net.ResolveIPAddr("ip", domain)
 	fmt.Println("Target IP: " + raddr.String())
 
-	//构建发送的ICMP包
+	//創建發送的ICMP包
 	icmp := ICMP{
 		Type:     8,
 		Code:     0,
-		Checksum: 0, //默认校验和为0，后面计算再写入
+		Checksum: 0, //默認較驗和為0，後面計算後再寫入
 		ID:       0,
 		Seq:      0,
 	}
 
-	//新建buffer将包内数据写入，以计算校验和并将校验和并存入icmp结构体中
+	//創建buffer將包內數據寫入，以計算較驗和並將較驗和存入icmp結構體中
 	var buffer bytes.Buffer
 	binary.Write(&buffer, binary.BigEndian, icmp)
 	icmp.Checksum = CheckSum(buffer.Bytes())
 	buffer.Reset()
-	//与目的ip地址建立连接，第二个参数为空则默认为本地ip，第三个参数为目的ip
+	//與目的IP地址建立連接，第二個參數為空則默認為本地IP，第三個參數為目的IP
 	con, err := net.DialIP("ip4:icmp", nil, raddr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//主函数接术后关闭连接
+	//關閉連接
 	defer con.Close()
-	//构建buffer将要发送的数据存入
+	//創建buffer將要發送的數據存入
 	var sendBuffer bytes.Buffer
 	binary.Write(&sendBuffer, binary.BigEndian, icmp)
 	if _, err := con.Write(sendBuffer.Bytes()); err != nil {
 		log.Fatal(err)
 	}
-	//开始计算时间
+	//開始計算時間
 	timeStart := time.Now()
-	//设置读取超时时间为2s
+	//設置超時時間2s
 	con.SetReadDeadline((time.Now().Add(time.Second * 2)))
-	//构建接受的比特数组
+	//創建接收bit陣列
 	rec := make([]byte, 1024)
-	//读取连接返回的数据，将数据放入rec中
+	//讀取連接返回的數據，將數據放入rec中
 	recCnt, err := con.Read(rec)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//设置结束时间，计算两次时间之差为ping的时间
+	//設置結束時間，計算兩次時間之差為ping的時間
 	timeEnd := time.Now()
 	durationTime := timeEnd.Sub(timeStart).Nanoseconds() / 1e6
-	//显示结果
+	//顯示結果
 	fmt.Printf("%d bytes from %s: seq=%d time=%dms\n", recCnt, raddr.String(), icmp.Seq, durationTime)
 
 }
