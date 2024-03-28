@@ -4,18 +4,79 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"strconv"
 	"time"
 )
 
+func ListFiles(path string) []fs.DirEntry {
+	fileInfos, err := os.ReadDir(path)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return fileInfos
+}
+
+func MoveFile(oldFileName string, NewFileName string) {
+	err := os.Rename(oldFileName, NewFileName)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func CopyFile(oldFileName string, NewFileName string) {
+	err := os.Link(oldFileName, NewFileName)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func IsExists(path string) (bool, fs.FileInfo) {
+	f, err := os.Stat(path)
+	if err != nil {
+		return os.IsExist(err), f
+	}
+	return true, f
+}
+
 func main() {
-	file := openFileTest("./demo.txt")
-	defer file.Close()
-	readFileTest(file)
+	path := "D:\\downloads\\edge\\slot icon_來源_星城遊戲館_0326"
+	new_path := "D:\\downloads\\edge\\slot game"
+	name := "slot_game_"
+
+	var index int = 0
+
+	exist, rootDirInfo := IsExists(path)
+	if !exist {
+		return
+	}
+	if !rootDirInfo.IsDir() {
+		return
+	}
+
+	var Dirs []string
+	Dirs = append(Dirs, path)
+	for len(Dirs) != 0 {
+		firstPath := Dirs[0]
+		Dirs = Dirs[1:]
+		files := ListFiles(firstPath)
+		for _, f := range files {
+			fileName := firstPath + "\\" + f.Name()
+			if f.IsDir() {
+				Dirs = append(Dirs, fileName)
+			} else {
+				CopyFile(fileName, new_path+"\\"+name+strconv.Itoa(index)+".png")
+				index++
+			}
+		}
+	}
+
 }
 
 // 創建目錄
-func createDirTest() {
+func CreateDirTest() {
 	err := os.Mkdir("test", 0777)
 	if err != nil {
 		fmt.Println(err)
@@ -54,7 +115,7 @@ func renameDirTest() {
 	}
 }
 
-//創建一個檔案
+// 創建一個檔案
 func createFileTest() {
 	fp, err := os.Create("./test.txt")
 	fmt.Println(fp, err)

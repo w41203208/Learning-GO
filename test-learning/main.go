@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-
 	// "rsc.io/quote"
 )
 
@@ -20,8 +19,6 @@ func main() {
 	// var stringBuffer bytes.Buffer
 	// arr := []int{0,1,2,3,4,5,6,8,9,11,10,50}
 	// test.MapArray(arr)
-
-
 
 	var num int8 = 30
 
